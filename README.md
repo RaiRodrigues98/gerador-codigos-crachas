@@ -10,7 +10,7 @@ Gerador estático de Code 128 e QR Code com conteúdo exato `email + \t + senha`
 Alternativa: execute `npx vercel --prod` nesta pasta, com sua conta autenticada.
 
 ## Uso
-Digite o e-mail e a senha, selecione formato e dimensões em centímetros e gere. QR sempre quadrado. PDF tem página nas dimensões exatas. Imprima em 100%, sem ajuste à página. PNG é rasterizado com resolução equivalente a 600 dpi; use PDF ou SVG para preservar medidas físicas na impressão.
+Digite o e-mail e a senha, selecione formato e dimensões em centímetros e gere. O conteúdo é sempre e-mail + Tab + senha, sem Enter; o padrão compacto é 10 × 1,3 cm. QR sempre quadrado. PDF tem página nas dimensões exatas. Imprima em 100%, sem ajuste à página. PNG é rasterizado com resolução equivalente a 600 dpi; use PDF ou SVG para preservar medidas físicas na impressão.
 
 A etiqueta contém a senha recuperável. Não compartilhe. Os campos iniciam vazios e não são persistidos. Não utilize credenciais reais em commits ou exemplos.
 
