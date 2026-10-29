@@ -73,8 +73,11 @@ $('form').onsubmit = event => {
 
     // Caractere ASCII 9 entre os dados: o coletor deve transmiti-lo como tecla Tab.
     const payload = `${email}\t${password}`;
-    if (!window.JsBarcode || !window.qrcode) {
-      throw Error('Não foi possível carregar os geradores.');
+    if (type === 'barcode' && typeof window.JsBarcode !== 'function') {
+      throw Error('Não foi possível carregar o gerador Code 128. Atualize a página e tente novamente.');
+    }
+    if (type === 'qr' && typeof window.qrcode !== 'function') {
+      throw Error('Não foi possível carregar o gerador QR Code. Atualize a página e tente novamente.');
     }
 
     let svg;
