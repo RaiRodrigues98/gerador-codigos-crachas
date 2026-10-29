@@ -14,7 +14,23 @@ svg.setAttribute('width',w+'mm');svg.setAttribute('height',h+'mm');svg.setAttrib
 function download(blob,ext){const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='acesso-'+current.type+'.'+ext;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}
 function serialize(){return new XMLSerializer().serializeToString(current.svg);}
 async function raster(){const snapshot=current;const url=URL.createObjectURL(new Blob([serialize()],{type:'image/svg+xml'}));try{const img=new Image();img.src=url;await img.decode();const canvas=document.createElement('canvas');canvas.width=Math.round(snapshot.w/25.4*600);canvas.height=Math.round(snapshot.h/25.4*600);const ctx=canvas.getContext('2d');ctx.fillStyle='white';ctx.fillRect(0,0,canvas.width,canvas.height);ctx.imageSmoothingEnabled=false;ctx.drawImage(img,0,0,canvas.width,canvas.height);return canvas;}finally{URL.revokeObjectURL(url);}}
-$('svg').onclick=()=>download(new Blob([serialize()],{type:'image/svg+xml'}),'svg');
-$('png').onclick=async()=>{try{const c=await raster();c.toBlob(b=>download(b,'png'));}catch(e){$('status').textContent='Falha na exportação: '+e.message;}};
-$('pdf').onclick=async()=>{try{const {w,h}=current,c=await raster();const doc=new window.jspdf.jsPDF({orientation:w>=h?'landscape':'portrait',unit:'mm',format:[w,h]});doc.addImage(c.toDataURL('image/png'),'PNG',0,0,w,h);doc.save('acesso-'+current.type+'.pdf');}catch(e){$('status').textContent='Falha no PDF: '+e.message;}};
+let exportBusy=false;
+async function exportConfirmed(format, action){
+ if(exportBusy || !current)return;
+ exportBusy=true;
+ const buttons=['pdf','png','svg'];
+ buttons.forEach(id=>$(id).disabled=true);
+ try{
+  if(!window.confirm(`Deseja baixar o código em ${format.toUpperCase()}?`))return;
+  await action();
+  $('status').textContent='Download solicitado. Para baixar outra cópia, confirme novamente.';
+ }catch(error){$('status').textContent='Falha na exportação: '+error.message;}
+ finally{
+  // Mantém o bloqueio por um instante para absorver o segundo clique.
+  setTimeout(()=>{exportBusy=false;buttons.forEach(id=>$(id).disabled=!current);},1000);
+ }
+}
+$('svg').onclick=()=>exportConfirmed('svg',async()=>download(new Blob([serialize()],{type:'image/svg+xml'}),'svg'));
+$('png').onclick=()=>exportConfirmed('png',async()=>{const snapshot=current,c=await raster();const blob=await new Promise((resolve,reject)=>c.toBlob(b=>b?resolve(b):reject(Error('Não foi possível gerar a imagem.'))));if(current!==snapshot)throw Error('Os dados foram alterados. Gere o código novamente.');download(blob,'png');});
+$('pdf').onclick=()=>exportConfirmed('pdf',async()=>{const snapshot=current,{w,h}=snapshot,c=await raster();if(current!==snapshot)throw Error('Os dados foram alterados. Gere o código novamente.');const doc=new window.jspdf.jsPDF({orientation:w>=h?'landscape':'portrait',unit:'mm',format:[w,h]});doc.addImage(c.toDataURL('image/png'),'PNG',0,0,w,h);doc.save('acesso-'+snapshot.type+'.pdf');});
 $('print').onclick=()=>{const {w,h}=current,frame=document.createElement('iframe');frame.style.cssText='position:fixed;width:0;height:0;border:0';document.body.append(frame);const doc=frame.contentDocument;doc.open();doc.write(`<!doctype html><html><head><title>Etiqueta de acesso</title><style>@page{size:${w}mm ${h}mm;margin:0}html,body{margin:0;padding:0;width:${w}mm;height:${h}mm}svg{display:block}</style></head><body>${serialize()}</body></html>`);doc.close();frame.contentWindow.focus();setTimeout(()=>{frame.contentWindow.print();setTimeout(()=>frame.remove(),60000);},200);};
