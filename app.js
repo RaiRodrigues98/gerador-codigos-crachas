@@ -5,6 +5,9 @@ let type = 'barcode';
 let current = null;
 let exportBusy = false;
 const types = { barcode: { w: 10, h: 1.3 }, qr: { w: 3, h: 3 } };
+// Raster reference that the user's Compex reader successfully decoded: 976 × 128 px
+// for a 100 × 13 mm label. This keeps the barcode's module size aligned with that sample.
+const barcodeRasterReference = { width: 976, height: 128, widthMm: 100, heightMm: 13 };
 
 function invalidate() {
   current = null;
@@ -164,8 +167,15 @@ async function raster() {
     img.src = url;
     await img.decode();
     const canvas = document.createElement('canvas');
-    canvas.width = Math.round(snapshot.w / 25.4 * 600);
-    canvas.height = Math.round(snapshot.h / 25.4 * 600);
+    if (snapshot.type === 'barcode') {
+      // At the reference size this produces exactly 976 × 128 px. Other dimensions
+      // preserve the same pixel-per-mm scale on each axis.
+      canvas.width = Math.round(snapshot.w * barcodeRasterReference.width / barcodeRasterReference.widthMm);
+      canvas.height = Math.round(snapshot.h * barcodeRasterReference.height / barcodeRasterReference.heightMm);
+    } else {
+      canvas.width = Math.round(snapshot.w / 25.4 * 600);
+      canvas.height = Math.round(snapshot.h / 25.4 * 600);
+    }
     const context = canvas.getContext('2d');
     context.fillStyle = 'white';
     context.fillRect(0, 0, canvas.width, canvas.height);
